@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>ClipPocket - クリップボード＆整形メモ</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-2: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-text: #082f49;
+      --accent: #f59e0b;
+      --danger: #f43f5e;
+      --border: rgba(148, 163, 184, 0.16);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0 0 96px 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+    }
+
+    .app-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.97);
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+    }
+
+    .search-box:focus {
+      border-color: var(--primary);
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .chip {
+      background: var(--surface);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .chip.active {
+      background: var(--primary);
+      color: var(--primary-text);
+      border-color: var(--primary);
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 14px 16px;
+    }
+
+    .quick-add {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .quick-add textarea {
+      width: 100%;
+      min-height: 64px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      padding: 10px;
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .quick-add textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .quick-add-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      gap: 8px;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-text);
+      border: none;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 38px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 12px;
+      transition: border-color 0.15s ease;
+    }
+
+    .card.pinned {
+      border-color: rgba(245, 158, 11, 0.55);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 10px;
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .badge.url {
+      background: rgba(56, 189, 248, 0.18);
+      color: #7dd3fc;
+    }
+
+    .badge.pin {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fcd34d;
+    }
+
+    .content {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .action-btn {
+      background: var(--surface-2);
+      color: var(--text);
+      border: none;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 34px;
+    }
+
+    .action-btn.copy {
+      background: rgba(56, 189, 248, 0.22);
+      color: #bae6fd;
+    }
+
+    .action-btn.danger {
+      background: rgba(244, 63, 94, 0.16);
+      color: #fda4af;
+      margin-left: auto;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: center;
+      z-index: 30;
+    }
+
+    .fab-read {
+      width: 100%;
+      max-width: 720px;
+      background: var(--primary);
+      color: var(--primary-text);
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid var(--primary);
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 50;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 40px 16px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="app-title-row">
+      <h1>📋 ClipPocket</h1>
+      <div class="header-actions">
+        <button class="icon-btn" id="exportBtn">JSON書出</button>
+        <button class="icon-btn" id="clearUnpinnedBtn">ピン外削除</button>
+      </div>
+    </div>
+    <input type="search" id="searchInput" class="search-box" placeholder="履歴を検索（キーワード・URL・定型文）..." />
+    <div class="filter-row" id="filterRow">
+      <button class="chip active" data-filter="all">すべて</button>
+      <button class="chip" data-filter="pinned">📌 ピン留め</button>
+      <button class="chip" data-filter="url">🔗 URL</button>
+      <button class="chip" data-filter="text">📝 テキスト</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="quick-add">
+      <textarea id="quickInput" placeholder="ここに貼り付け（長押し/Ctrl+V）するか、定型文・メモを入力して保存..."></textarea>
+      <div class="quick-add-footer">
+        <span class="hint" id="charCount">0 文字</span>
+        <button class="btn-primary" id="saveManualBtn">履歴に追加</button>
+      </div>
+    </section>
+
+    <section id="listContainer"></section>
+  </main>
+
+  <div class="bottom-bar">
+    <button class="fab-read" id="readClipboardBtn">📥 今のクリップボードを取り込む</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = 'clippocket_items_v1';
+    let items = loadItems();
+    let currentFilter = 'all';
+    let searchQuery = '';
+
+    const listContainer = document.getElementById('listContainer');
+    const searchInput = document.getElementById('searchInput');
+    const quickInput = document.getElementById('quickInput');
+    const charCount = document.getElementById('charCount');
+    const toastEl = document.getElementById('toast');
+
+    function loadItems() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveItems() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 1800);
+    }
+
+    function isUrl(text) {
+      return /^https?:\/\/\S+$/i.test(text.trim());
+    }
+
+    function formatDate(ts) {
+      const d = new Date(ts);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function addItem(rawText, toastMsg = '履歴に保存しました') {
+      const text = (rawText || '').trim();
+      if (!text) return;
+
+      const existingIdx = items.findIndex((it) => it.text === text);
+      if (existingIdx !== -1) {
+        const existing = items[existingIdx];
+        items.splice(existingIdx, 1);
+        existing.updatedAt = Date.now();
+        items.unshift(existing);
+      } else {
+        items.unshift({
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+          text,
+          pinned: false,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+        if (items.length > 200) {
+          // ピン留め以外から古いものを削除
+          const unpinnedIndices = items
+            .map((it, idx) => (!it.pinned ? idx : -1))
+            .filter((idx) => idx !== -1);
+          if (unpinnedIndices.length > 0) {
+            items.splice(unpinnedIndices[unpinnedIndices.length - 1], 1);
+          }
+        }
+      }
+      saveItems();
+      render();
+      showToast(toastMsg);
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('クリップボードにコピーしました！');
+      } catch {
+        // フォールバック
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('コピーしました！');
+      }
+    }
+
+    function transformAndAdd(id, mode) {
+      const target = items.find((it) => it.id === id);
+      if (!target) return;
+      let result = target.text;
+      if (mode === 'singleLine') {
+        result = result.replace(/\s+/g, ' ').trim();
+      } else if (mode === 'trim') {
+        result = result.trim();
+      } else if (mode === 'encode') {
+        result = encodeURIComponent(result);
+      } else if (mode === 'decode') {
+        try {
+          result = decodeURIComponent(result);
+        } catch {
+          showToast('デコードできない文字列です');
+          return;
+        }
+      }
+      addItem(result, '整形して履歴に追加しました');
+      copyText(result);
+    }
+
+    function togglePin(id) {
+      const target = items.find((it) => it.id === id);
+      if (!target) return;
+      target.pinned = !target.pinned;
+      saveItems();
+      render();
+    }
+
+    function deleteItem(id) {
+      items = items.filter((it) => it.id !== id);
+      saveItems();
+      render();
+      showToast('削除しました');
+    }
+
+    function render() {
+      const q = searchQuery.trim().toLowerCase();
+      const filtered = items
+        .filter((it) => {
+          if (currentFilter === 'pinned' && !it.pinned) return false;
+          if (currentFilter === 'url' && !isUrl(it.text)) return false;
+          if (currentFilter === 'text' && isUrl(it.text)) return false;
+          if (q && !it.text.toLowerCase().includes(q)) return false;
+          return true;
+        })
+        .sort((a, b) => {
+          if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+          return (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt);
+        });
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="empty">該当する履歴がありません。<br>上の入力欄か下のボタンから追加してみてください！</div>`;
+        return;
+      }
+
+      listContainer.innerHTML = filtered
+        .map((it) => {
+          const urlFlag = isUrl(it.text);
+          return `
+            <article class="card ${it.pinned ? 'pinned' : ''}">
+              <div class="card-top">
+                <div class="badges">
+                  ${it.pinned ? '<span class="badge pin">📌 ピン留め</span>' : ''}
+                  <span class="badge ${urlFlag ? 'url' : ''}">${urlFlag ? 'URL' : 'TEXT'}</span>
+                  <span>${it.text.length}文字</span>
+                </div>
+                <span>${formatDate(it.updatedAt || it.createdAt)}</span>
+              </div>
+              <div class="content">${escapeHtml(it.text)}</div>
+              <div class="actions">
+                <button class="action-btn copy" onclick="copyTextById('${it.id}')">コピー</button>
+                <button class="action-btn" onclick="togglePin('${it.id}')">${it.pinned ? 'ピン解除' : 'ピン留め'}</button>
+                <button class="action-btn" onclick="transformAndAdd('${it.id}', 'singleLine')">1行化</button>
+                <button class="action-btn" onclick="transformAndAdd('${it.id}', '${urlFlag ? 'decode' : 'encode'}')">${urlFlag ? 'URL復号' : 'URL符号'}</button>
+                <button class="action-btn danger" onclick="deleteItem('${it.id}')">削除</button>
+              </div>
+            </article>
+          `;
+        })
+        .join('');
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    window.copyTextById = (id) => {
+      const target = items.find((it) => it.id === id);
+      if (target) copyText(target.text);
+    };
+    window.togglePin = togglePin;
+    window.transformAndAdd = transformAndAdd;
+    window.deleteItem = deleteItem;
+
+    document.getElementById('readClipboardBtn').addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          addItem(text, 'クリップボードから取り込みました！');
+        } else {
+          quickInput.focus();
+          showToast('空か読取不可です。上の欄に貼り付けてください');
+        }
+      } catch {
+        quickInput.focus();
+        showToast('上の入力欄をタップして貼り付けてください');
+      }
+    });
+
+    document.getElementById('saveManualBtn').addEventListener('click', () => {
+      if (!quickInput.value.trim()) return;
+      addItem(quickInput.value);
+      quickInput.value = '';
+      charCount.textContent = '0 文字';
+    });
+
+    quickInput.addEventListener('paste', (e) => {
+      const pasted = (e.clipboardData || window.clipboardData).getData('text');
+      if (pasted && pasted.trim()) {
+        setTimeout(() => {
+          addItem(pasted, '貼り付けから保存しました！');
+          quickInput.value = '';
+          charCount.textContent = '0 文字';
+        }, 10);
+      }
+    });
+
+    quickInput.addEventListener('input', () => {
+      charCount.textContent = `${quickInput.value.length} 文字`;
+    });
+
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      render();
+    });
+
+    document.getElementById('filterRow').addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      document.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      render();
+    });
+
+    document.getElementById('clearUnpinnedBtn').addEventListener('click', () => {
+      if (!confirm('ピン留め以外の履歴をすべて削除しますか？')) return;
+      items = items.filter((it) => it.pinned);
+      saveItems();
+      render();
+      showToast('ピン留め以外を削除しました');
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clippocket-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('JSONを書き出しました');
+    });
+
+    render();
+  </script>
+</body>
+</html>
